@@ -29,6 +29,8 @@ app.initialize();
 const rooms = {}
 
 // Routes
+//server.use(bodyParser);
+
 server.post('/createroom', (request, response) => {
   var randomwords = require('random-words');
   var randomnumber = require('random-number');
@@ -46,6 +48,20 @@ server.post('/createroom', (request, response) => {
   response.status(200).json({
     message: code
   });
+});
+
+server.post('/joinroom', bodyParser.json(), (request, response) => {
+  
+  //Cannot locate room
+  if(!(request.body[roomcode] in rooms)){
+    response.status(400);
+  }
+  
+  //Adding user to room
+  rooms[request.body[roomcode]][users].push(request.body[username]);
+  
+  response.status(200).json
+  
 });
 
 server.listen(port, () => console.log(`Listening on ${port}`));

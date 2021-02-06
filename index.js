@@ -26,7 +26,7 @@ server.use(
 );
 app.initialize();
 
-const rooms = {}
+const rooms = {};
 
 // Routes
 //server.use(bodyParser);
@@ -34,34 +34,36 @@ const rooms = {}
 server.post('/createroom', (request, response) => {
   var randomwords = require('random-words');
   var randomnumber = require('random-number');
-  var code = randomwords({exactly: 2, join: '-'}).concat('-',randomnumber({min:1, max:9, integer: true}));
-  
+  var code = randomwords({ exactly: 2, join: '-' }).concat('-', randomnumber({ min: 1, max: 9, integer: true }));
+
   rooms[code] = {
     users: [],
     videoQueue: [],
     videoState: {
-      time:0,
+      time: 0,
       isPaused: false
     }
-  }
-  
+  };
+
   response.status(200).json({
     message: code
   });
 });
 
 server.post('/joinroom', bodyParser.json(), (request, response) => {
-  
+  console.log(request.body);
+
   //Cannot locate room
-  if(!(request.body[roomcode] in rooms)){
-    response.status(400);
+  if (!(request.body['roomcode'] in rooms)) {
+    response.status(400).json({ error: 'error joining room' });
+    return;
   }
-  
+
   //Adding user to room
-  rooms[request.body[roomcode]][users].push(request.body[username]);
-  
-  response.status(200).json
-  
+  rooms[request.body['roomcode']]['users'].push(request.body['username']);
+  response.status(200).json({ message: 'room joined' });
+
+  console.log(rooms);
 });
 
 server.listen(port, () => console.log(`Listening on ${port}`));

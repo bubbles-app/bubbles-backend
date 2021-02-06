@@ -26,10 +26,25 @@ server.use(
 );
 app.initialize();
 
+const rooms = {}
+
 // Routes
-server.get('/', (request, response) => {
+server.post('/createroom', (request, response) => {
+  var randomwords = require('random-words');
+  var randomnumber = require('random-number');
+  var code = randomwords({exactly: 2, join: '-'}).concat('-',randomnumber({min:1, max:9, integer: true}));
+  
+  rooms[code] = {
+    users: [],
+    videoQueue: [],
+    videoState: {
+      time:0,
+      isPaused: false
+    }
+  }
+  
   response.status(200).json({
-    message: 'hi'
+    message: code
   });
 });
 

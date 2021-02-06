@@ -1,10 +1,10 @@
 // Import modules
-require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
+import app from './src/App';
 
 // Setup
-const app = express();
+const server = express();
 const port = process.env.PORT || 9000;
 const allowCrossDomain = (req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -13,25 +13,24 @@ const allowCrossDomain = (req, res, next) => {
   // intercept OPTIONS method
   if ('OPTIONS' == req.method) {
     res.send(200);
-  }
-  else {
+  } else {
     next();
   }
 };
-app.use(allowCrossDomain);
-app.use(bodyParser.json());
-app.use(
+server.use(allowCrossDomain);
+server.use(bodyParser.json());
+server.use(
   bodyParser.urlencoded({
-    extended: true,
+    extended: true
   })
 );
+app.initialize();
 
 // Routes
-app.get('/', (request, response) => {
-  response.status(200).json(
-    {
-      message: "hi"
-    });
+server.get('/', (request, response) => {
+  response.status(200).json({
+    message: 'hi'
+  });
 });
 
-app.listen(port, () => console.log(`Listening on ${port}`));
+server.listen(port, () => console.log(`Listening on ${port}`));

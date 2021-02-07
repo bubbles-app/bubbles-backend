@@ -4,8 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --exec babel-node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "rm -rf build && mkdir build",
+    "build-babel": "babel -d ./build ./src -s",
+    "build": "npm run clean && npm run build-babel",
+    "start": "npm run build && node ./build/index.js"
   },
   "keywords": [],
   "author": "",
@@ -15,12 +18,7 @@
     "express": "^4.17.1",
     "mqtt": "^4.2.6",
     "random-number": "0.0.9",
-    "random-words": "^1.1.1",
-    "@babel/cli": "^7.12.13",
-    "@babel/core": "^7.12.13",
-    "@babel/node": "^7.12.13",
-    "@babel/preset-env": "^7.12.13",
-    "nodemon": "^2.0.7"
+    "random-words": "^1.1.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.12.13",

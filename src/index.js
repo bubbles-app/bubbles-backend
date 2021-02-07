@@ -1,7 +1,7 @@
 // Import modules
 const express = require('express');
 const bodyParser = require('body-parser');
-import app from './src/App';
+import app from './App';
 
 // Setupp
 const server = express();
@@ -28,8 +28,9 @@ app.initialize();
 
 const rooms = {};
 
-// Routes
-//server.use(bodyParser);
+server.get('/', (req, res) => {
+  res.status(200).json({ message: 'herro' });
+});
 
 //-------------------Create Room-----------------------------
 server.post('/createroom', (request, response) => {

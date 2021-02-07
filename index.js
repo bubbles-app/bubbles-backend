@@ -70,7 +70,9 @@ server.post('/joinroom', bodyParser.json(), (request, response) => {
   response.status(200).json({ message: 'room joined' });
 
   //Publishing join message
-  app.publishMessage(request.body['roomcode'], request.body['username'].concat(' joined the room.'));
+  const roomcode = request.body['roomcode'];
+  const username = request.body['username'];
+  app.publishMessage(roomcode, JSON.stringify({ messageType: 'userJoined', username: username }));
   console.log('Publishing join message');
 
   console.log(rooms);

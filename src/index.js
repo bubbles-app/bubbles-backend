@@ -1,7 +1,7 @@
 // Import modules
 const express = require('express');
 const bodyParser = require('body-parser');
-import app from './App';
+const app = require('./App').app;
 
 // Setupp
 const server = express();

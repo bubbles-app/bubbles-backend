@@ -1,5 +1,6 @@
-import mqtt from 'mqtt';
-import options from './messaging-options';
+const mqtt = require('mqtt');
+const pkg = require('./messaging-options');
+const options = pkg.options;
 
 function messaging() {
   let client;
@@ -55,4 +56,7 @@ function messaging() {
 }
 
 let messagingClient = messaging();
-export default messagingClient;
+
+module.exports = {
+  messagingClient: messagingClient
+};

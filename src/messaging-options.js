@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-export default {
+const options = {
   host: process.env.SOLACE_HOST,
   username: 'solace-cloud-client',
   password: process.env.SOLACE_PASSWORD,
@@ -19,3 +19,5 @@ export default {
   },
   rejectUnauthorized: false
 };
+
+exports.options = options;

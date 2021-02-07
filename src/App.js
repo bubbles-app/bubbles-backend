@@ -1,4 +1,5 @@
-import messagingClient from './Messaging';
+const pkg = require('./Messaging');
+const messagingClient = pkg.messagingClient;
 
 class App {
   constructor() {}
@@ -44,4 +45,7 @@ class App {
 }
 
 const app = new App();
-export default app;
+
+module.exports = {
+  app: app
+};

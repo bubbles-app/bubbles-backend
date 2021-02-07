@@ -15,7 +15,12 @@
     "express": "^4.17.1",
     "mqtt": "^4.2.6",
     "random-number": "0.0.9",
-    "random-words": "^1.1.1"
+    "random-words": "^1.1.1",
+    "@babel/cli": "^7.12.13",
+    "@babel/core": "^7.12.13",
+    "@babel/node": "^7.12.13",
+    "@babel/preset-env": "^7.12.13",
+    "nodemon": "^2.0.7"
   },
   "devDependencies": {
     "@babel/cli": "^7.12.13",

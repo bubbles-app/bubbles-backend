@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 import app from './src/App';
 
-// Setup
+// Setupp
 const server = express();
 const port = process.env.PORT || 9000;
 const allowCrossDomain = (req, res, next) => {

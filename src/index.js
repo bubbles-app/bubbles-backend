@@ -46,7 +46,8 @@ server.post('/createroom', (request, response) => {
     videoQueue: [],
     videoState: {
       time: 0,
-      isPaused: false
+      isPaused: false,
+      url: ''
     }
   };
 
@@ -73,7 +74,11 @@ server.post('/joinroom', bodyParser.json(), (request, response) => {
   //Publishing join message
   const roomcode = request.body['roomcode'];
   const username = request.body['username'];
-  const message = JSON.stringify({ messageType: 'newTextMessage', username: 'System', text: username.concat(" has joined the room.") })
+  const message = JSON.stringify({
+    messageType: 'newTextMessage',
+    username: 'System',
+    text: username.concat(' has joined the room.')
+  });
   app.publishMessage(roomcode, message);
   //app.publishMessage(roomcode, JSON.stringify({ messageType: 'userJoined', username: username }));
   console.log('Publishing join message');
@@ -98,6 +103,42 @@ server.post('/getUsers', bodyParser.json(), (request, response) => {
   response.status(200).json({
     users: rooms[roomcode]['users']
   });
+});
+
+//-------------------Get current video-----------------------------
+server.post('/getcurrentvideo', bodyParser.json(), (request, response) => {
+  //Cannot locate room
+  const roomcode = request.body['roomcode'];
+  if (!(roomcode in rooms)) {
+    response.status(400).json({ error: 'Error - no room exist' });
+    return;
+  }
+
+  console.log(rooms[roomcode]);
+
+  response.status(200).json({
+    url: rooms[roomcode]['videoState']['url']
+  });
+});
+
+//-------------------Set current video-----------------------------
+server.post('/setcurrentvideo', bodyParser.json(), (request, response) => {
+  //Cannot locate room
+  const roomcode = request.body['roomcode'];
+  if (!(roomcode in rooms)) {
+    response.status(400).json({ error: 'Error - no room exist' });
+    return;
+  }
+
+  // posting video url to global variable
+  const url = request.body['url'];
+  rooms[roomcode]['videoState']['url'] = url;
+
+  response.status(200).json({
+    message: 'ok'
+  });
+
+  console.log(rooms);
 });
 
 server.listen(port, () => console.log(`Listening on ${port}`));

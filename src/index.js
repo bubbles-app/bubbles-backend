@@ -2,8 +2,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = require('./App').app;
+const rooms = require('./Rooms');
 
-// Setupp
+// Setup
 const server = express();
 const port = process.env.PORT || 9000;
 const allowCrossDomain = (req, res, next) => {
@@ -26,30 +27,16 @@ server.use(
 );
 app.initialize();
 
-const rooms = {};
-
 server.get('/', (req, res) => {
   res.status(200).json({ message: 'herro' });
 });
 
 //-------------------Create Room-----------------------------
 server.post('/createroom', (request, response) => {
-  var randomwords = require('random-words');
-  var randomnumber = require('random-number');
-  var code = randomwords({ exactly: 2, join: '-' }).concat('-', randomnumber({ min: 1, max: 9, integer: true }));
+  console.log(request.body);
 
-  //Subscribing to topic
+  let code = rooms.createRoom();
   app.subscribeToTopic(code);
-
-  rooms[code] = {
-    users: [],
-    videoQueue: [],
-    videoState: {
-      time: 0,
-      isPaused: false,
-      url: ''
-    }
-  };
 
   response.status(200).json({
     message: code
@@ -60,28 +47,29 @@ server.post('/createroom', (request, response) => {
 server.post('/joinroom', bodyParser.json(), (request, response) => {
   console.log(request.body);
 
-  //Cannot locate room
-  if (!(request.body['roomcode'] in rooms)) {
-    response.status(400).json({ error: 'error joining room' });
-    console.log('Error joining room - No Roomcode Exist');
+  const roomcode = request.body['roomcode'];
+  const username = request.body['username'];
+
+  // Cannot locate room
+  if (!rooms.hasRoom(roomcode)) {
+    const error_msg = 'Error - no such room exists';
+    response.status(400).json({ error: error_msg });
+    console.log(error_msg);
     return;
   }
 
-  //Adding user to room
-  rooms[request.body['roomcode']]['users'].push(request.body['username']);
+  // Adding user to room
+  rooms.addUserToRoom(roomcode, username);
   response.status(200).json({ message: 'room joined' });
 
-  //Publishing join message
-  const roomcode = request.body['roomcode'];
-  const username = request.body['username'];
+  // Publishing join message
   const message = JSON.stringify({
     messageType: 'newTextMessage',
     username: 'System',
     text: username.concat(' has joined the room.')
   });
-  app.publishMessage(roomcode, message);
-  //app.publishMessage(roomcode, JSON.stringify({ messageType: 'userJoined', username: username }));
   console.log('Publishing join message');
+  app.publishMessage(roomcode, message);
 
   console.log(rooms);
 });
@@ -90,16 +78,53 @@ server.post('/joinroom', bodyParser.json(), (request, response) => {
 server.post('/getUsers', bodyParser.json(), (request, response) => {
   console.log(request.body);
 
-  //Cannot locate room
-  if (!(request.body['roomcode'] in rooms)) {
-    response.status(400).json({ error: 'Error - no room exist' });
-    console.log('Error - No Roomcode Exist');
+  const roomcode = request.body['roomcode'];
+
+  // Cannot locate room
+  if (!rooms.hasRoom(roomcode)) {
+    const error_msg = 'Error - no such room exists';
+    response.status(400).json({ error: error_msg });
+    console.log(error_msg);
     return;
   }
 
-  const roomcode = request.body['roomcode'];
+  // Sending list of users
+  response.status(200).json({
+    users: rooms[roomcode]['users']
+  });
+});
 
-  //Sending list of users
+//-------------------Leave Room-----------------------------
+server.post('/exitRoom', bodyParser.json(), (request, response) => {
+  console.log(request.body);
+  
+  const roomcode = request.body['roomcode'];
+  const username = request.body['username'];
+
+  // Cannot locate room
+  if (!rooms.hasRoom(roomcode)) {
+    const error_msg = 'Error - no such room exists';
+    response.status(400).json({ error: error_msg });
+    console.log(error_msg);
+    return;
+  }
+
+  // Check user is in room
+  if (!rooms.roomHasUser(roomcode, username)) {
+    const error_msg = 'Error - no such user found in room';
+    response.status(400).json({ error: error_msg });
+    console.log(error_msg);
+    return;
+  }
+
+  // Removing user from room
+  rooms.removeUserFromRoom(roomcode, username);
+  
+  // Publishing exit message
+  console.log('Publishing exit message');
+  app.publishMessage(roomcode, JSON.stringify({ messageType: 'userExited', username: username }));
+
+  // Sending list of users
   response.status(200).json({
     users: rooms[roomcode]['users']
   });

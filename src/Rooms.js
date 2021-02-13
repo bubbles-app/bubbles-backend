@@ -39,7 +39,9 @@ class Rooms {
       this.rooms[roomcode]['users'].splice(idx, 1);
     }
   }
-};
+}
 
-let rooms = new Rooms();
-export default rooms;
+const rooms = new Rooms();
+module.exports = {
+  rooms: rooms
+};

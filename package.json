@@ -8,7 +8,9 @@
     "clean": "rm -rf build && mkdir build",
     "build-babel": "babel -d ./build ./src -s",
     "build": "npm run clean && npm run build-babel",
-    "start": "npm run build && node ./build/index.js"
+    "start": "npm run build && nodemon ./build/index.js",
+    "serve": "node ./build/index.js",
+    "heroku-postbuild": "npm install"
   },
   "keywords": [],
   "author": "",
@@ -26,7 +28,6 @@
     "@babel/core": "^7.12.16",
     "@babel/node": "^7.12.16",
     "@babel/preset-env": "^7.12.16",
-    "babel-preset-env": "^1.7.0",
     "nodemon": "^2.0.7"
   }
 }

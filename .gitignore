@@ -7,5 +7,5 @@ npm-debug.log
 *.dev
 .DS_Store
 
-# prod
+# Prod
 build

@@ -1,8 +1,8 @@
 // Import modules
 const express = require('express');
 const bodyParser = require('body-parser');
-const app = require('./App').app;
-const rooms = require('./Rooms');
+import app from './App';
+import rooms from './Rooms';
 
 // Setup
 const server = express();
@@ -13,7 +13,7 @@ const allowCrossDomain = (req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
   // intercept OPTIONS method
   if ('OPTIONS' == req.method) {
-    res.send(200);
+    res.sendStatus(200);
   } else {
     next();
   }
@@ -71,7 +71,7 @@ server.post('/joinroom', bodyParser.json(), (request, response) => {
   console.log('Publishing join message');
   app.publishMessage(roomcode, message);
 
-  console.log(rooms);
+  console.log(rooms.rooms);
 });
 
 //-------------------Get Users-----------------------------
@@ -90,7 +90,7 @@ server.post('/getUsers', bodyParser.json(), (request, response) => {
 
   // Sending list of users
   response.status(200).json({
-    users: rooms[roomcode]['users']
+    users: rooms.getUsersForRoom(roomcode)
   });
 });
 

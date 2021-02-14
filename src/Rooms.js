@@ -3,10 +3,11 @@ class Rooms {
     this.randomwords = require('random-words');
     this.randomnumber = require('random-number');
     this.rooms = {};
+    this.createRoom = this.createRoom.bind(this);
   }
 
   createRoom() {
-    var code = randomwords({ exactly: 2, join: '-' }).concat('-', randomnumber({ min: 1, max: 9, integer: true })); 
+    var code = this.randomwords({ exactly: 2, join: '-' }).concat('-', this.randomnumber({ min: 1, max: 9, integer: true })); 
     this.rooms[code] = {
       users: [],
       videoQueue: [],
@@ -27,6 +28,10 @@ class Rooms {
     this.rooms[roomcode]['users'].push(username);
   }
 
+  getUsersForRoom(roomcode) {
+    return this.rooms[roomcode]['users'];
+  }
+
   roomHasUser(roomcode, username) {
     // Assume room exists
     return (username in this.rooms[roomcode]['users']);
@@ -41,7 +46,5 @@ class Rooms {
   }
 }
 
-const rooms = new Rooms();
-module.exports = {
-  rooms: rooms
-};
+let rooms = new Rooms();
+export default rooms;

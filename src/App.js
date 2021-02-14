@@ -45,7 +45,4 @@ class App {
 }
 
 const app = new App();
-
-module.exports = {
-  app: app
-};
+export default app;

@@ -10,7 +10,7 @@
     "build": "npm run clean && npm run build-babel",
     "start": "npm run build && nodemon ./build/index.js",
     "serve": "node ./build/index.js",
-    "heroku-postbuild": "npm install"
+    "heroku-postbuild": "npm install && npm run build"
   },
   "keywords": [],
   "author": "",

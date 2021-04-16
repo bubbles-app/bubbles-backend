@@ -1,13 +1,14 @@
-class Rooms {
+import randomNumber from 'random-number';
+import randomWords from 'random-words';
+
+class Bubbles {
   constructor() {
-    this.randomwords = require('random-words');
-    this.randomnumber = require('random-number');
     this.rooms = {};
     this.createRoom = this.createRoom.bind(this);
   }
 
   createRoom() {
-    var code = this.randomwords({ exactly: 2, join: '-' }).concat('-', this.randomnumber({ min: 1, max: 9, integer: true })); 
+    const code = this.generateRoomCode();
     this.rooms[code] = {
       users: [],
       videoQueue: [],
@@ -20,21 +21,27 @@ class Rooms {
     return code;
   }
 
+  generateRoomCode() {
+    return randomWords({ exactly: 2, join: '-' }).concat('-', randomNumber({ min: 1, max: 9, integer: true }));
+  }
+
   hasRoom(roomcode) {
-    return (roomcode in this.rooms);
+    return roomcode in this.rooms;
   }
 
   addUserToRoom(roomcode, username) {
+    // Assume room exists
     this.rooms[roomcode]['users'].push(username);
   }
 
   getUsersForRoom(roomcode) {
+    // Assume room exists
     return this.rooms[roomcode]['users'];
   }
 
   roomHasUser(roomcode, username) {
     // Assume room exists
-    return (username in this.rooms[roomcode]['users']);
+    return username in this.rooms[roomcode]['users'];
   }
 
   removeUserFromRoom(roomcode, username) {
@@ -44,7 +51,17 @@ class Rooms {
       this.rooms[roomcode]['users'].splice(idx, 1);
     }
   }
+
+  getVideoUrlForRoom(roomcode) {
+    // Assume room exists
+    return this.rooms[roomcode]['videoState']['url'];
+  }
+
+  setVideoUrlForRoom(roomcode, url) {
+    // Assume room exists
+    this.rooms[roomcode]['videoState']['url'] = url;
+  }
 }
 
-let rooms = new Rooms();
-export default rooms;
+let bubbles = new Bubbles();
+export default bubbles;

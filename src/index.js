@@ -1,87 +1,124 @@
-// Import modules
+require('dotenv').config();
+import bubbles from './Bubbles';
 const express = require('express');
+const app = express();
 const bodyParser = require('body-parser');
-import app from './App';
-import rooms from './Rooms';
-
-// Setup
-const server = express();
+const cors = require('cors');
+const http = require('http');
+const server = http.createServer(app);
 const port = process.env.PORT || 9000;
-const allowCrossDomain = (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
-  // intercept OPTIONS method
-  if ('OPTIONS' == req.method) {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-};
-server.use(allowCrossDomain);
-server.use(bodyParser.json());
-server.use(
-  bodyParser.urlencoded({
-    extended: true
-  })
-);
-app.initialize();
 
-server.get('/', (req, res) => {
-  res.status(200).json({ message: 'herro' });
+app.use(cors());
+app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+const io = require('socket.io')(server, {
+  cors: { origin: '*' }
+});
+
+const sockets = {};
+
+server.listen(port, () => {
+  systemLog(`listening on *:${port}`);
+});
+
+// whenever a new socket connects, register event handlers
+io.on('connection', (socket) => {
+  const socketShortId = socket.id.substring(0, 5);
+
+  systemLog(`user ${socketShortId} connected`);
+  sockets[socket.id] = socket;
+
+  socket.on('newVideoUrl', ({ roomCode, urlString }) => {
+    socket.to(roomCode).emit('newVideoUrl', urlString);
+  });
+
+  socket.on('videoStateChange', ({ roomCode, eventCode, videoTime }) => {
+    // eventCode is an integer - it corresponds to PLAY, PAUSE, etc, interpreted on the client side
+    socket.to(roomCode).emit('videoStateChange', { eventCode, videoTime });
+  });
+
+  socket.on('newTextMessage', ({ roomCode, messageInfo }) => {
+    // io emits the event to the sender too
+    io.to(roomCode).emit('newTextMessage', messageInfo);
+  });
+
+  socket.on('disconnecting', () => {
+    console.log(socket.rooms); // the Set contains at least the socket ID
+  });
+
+  socket.on('disconnect', () => {
+    // socket.rooms.size === 0
+
+    systemLog(`user ${socketShortId} disconnected`);
+    delete sockets[socket.id];
+  });
+});
+
+app.get('/', (request, response) => {
+  response.status(200).json({ message: 'herro' });
 });
 
 //-------------------Create Room-----------------------------
-server.post('/createroom', (request, response) => {
-  console.log(request.body);
-
-  let code = rooms.createRoom();
-  app.subscribeToTopic(code);
-
-  response.status(200).json({
-    message: code
-  });
+app.post('/createroom', (request, response) => {
+  let roomCode = bubbles.createRoom();
+  response.status(200).json({ message: roomCode });
 });
 
 //-------------------Join Room-----------------------------
-server.post('/joinroom', bodyParser.json(), (request, response) => {
-  console.log(request.body);
+app.post('/joinroom', bodyParser.json(), (request, response) => {
+  const socketId = request.body.socketId;
+  const roomCode = request.body.roomCode;
+  const username = request.body.username;
 
-  const roomcode = request.body['roomcode'];
-  const username = request.body['username'];
-
-  // Cannot locate room
-  if (!rooms.hasRoom(roomcode)) {
-    const error_msg = 'Error - no such room exists';
+  // Socket id not valid
+  if (!(socketId in sockets)) {
+    const error_msg = 'Error - invalid socket id';
     response.status(400).json({ error: error_msg });
-    console.log(error_msg);
+    systemLog(error_msg);
     return;
   }
 
+  // Cannot locate room
+  if (!bubbles.hasRoom(roomCode)) {
+    const error_msg = 'Error - no such room exists';
+    response.status(400).json({ error: error_msg });
+    systemLog(error_msg);
+    return;
+  }
+
+  // Username not provided
+  if (!username) {
+    const error_msg = 'Error - username not provided';
+    response.status(400).json({ error: error_msg });
+    systemLog(error_msg);
+    return;
+  }
+
+  // Subscribe socket to room
+  const socket = sockets[socketId];
+  socket.join(roomCode);
+  systemLog(`${username} now subscribed to all events in the room (code: ${roomCode})`);
+
+  // Let everyone in the room know
+  io.to(roomCode).emit('newUserJoinedRoom', username);
+  io.to(roomCode).emit('newTextMessage', { username: 'System', text: `${username} joined the room!` });
+  systemLog(`Broadcasting to everyone in the room that ${username} joined!`);
+
   // Adding user to room
-  rooms.addUserToRoom(roomcode, username);
+  bubbles.addUserToRoom(roomCode, username);
+  systemLog(`${username} now physically in the room (code: ${roomCode})`);
+
   response.status(200).json({ message: 'room joined' });
-
-  // Publishing join message
-  const message = JSON.stringify({
-    messageType: 'newTextMessage',
-    username: 'System',
-    text: username.concat(' has joined the room.')
-  });
-  console.log('Publishing join message');
-  app.publishMessage(roomcode, message);
-
-  console.log(rooms.rooms);
+  console.log(bubbles.rooms);
 });
 
 //-------------------Get Users-----------------------------
-server.post('/getUsers', bodyParser.json(), (request, response) => {
-  console.log(request.body);
-
+app.post('/getUsers', bodyParser.json(), (request, response) => {
   const roomcode = request.body['roomcode'];
 
   // Cannot locate room
-  if (!rooms.hasRoom(roomcode)) {
+  if (!bubbles.hasRoom(roomcode)) {
     const error_msg = 'Error - no such room exists';
     response.status(400).json({ error: error_msg });
     console.log(error_msg);
@@ -90,80 +127,47 @@ server.post('/getUsers', bodyParser.json(), (request, response) => {
 
   // Sending list of users
   response.status(200).json({
-    users: rooms.getUsersForRoom(roomcode)
-  });
-});
-
-//-------------------Leave Room-----------------------------
-server.post('/exitRoom', bodyParser.json(), (request, response) => {
-  console.log(request.body);
-  
-  const roomcode = request.body['roomcode'];
-  const username = request.body['username'];
-
-  // Cannot locate room
-  if (!rooms.hasRoom(roomcode)) {
-    const error_msg = 'Error - no such room exists';
-    response.status(400).json({ error: error_msg });
-    console.log(error_msg);
-    return;
-  }
-
-  // Check user is in room
-  if (!rooms.roomHasUser(roomcode, username)) {
-    const error_msg = 'Error - no such user found in room';
-    response.status(400).json({ error: error_msg });
-    console.log(error_msg);
-    return;
-  }
-
-  // Removing user from room
-  rooms.removeUserFromRoom(roomcode, username);
-  
-  // Publishing exit message
-  console.log('Publishing exit message');
-  app.publishMessage(roomcode, JSON.stringify({ messageType: 'userExited', username: username }));
-
-  // Sending list of users
-  response.status(200).json({
-    users: rooms[roomcode]['users']
+    users: bubbles.getUsersForRoom(roomcode)
   });
 });
 
 //-------------------Get current video-----------------------------
-server.post('/getcurrentvideo', bodyParser.json(), (request, response) => {
-  //Cannot locate room
+app.post('/getcurrentvideo', bodyParser.json(), (request, response) => {
   const roomcode = request.body['roomcode'];
-  if (!(roomcode in rooms)) {
-    response.status(400).json({ error: 'Error - no room exist' });
+
+  // Cannot locate room
+  if (!bubbles.hasRoom(roomcode)) {
+    const error_msg = 'Error - no such room exists';
+    response.status(400).json({ error: error_msg });
+    console.log(error_msg);
     return;
   }
 
-  console.log(rooms[roomcode]);
-
   response.status(200).json({
-    url: rooms[roomcode]['videoState']['url']
+    url: bubbles.getVideoUrlForRoom(roomcode)
   });
 });
 
 //-------------------Set current video-----------------------------
-server.post('/setcurrentvideo', bodyParser.json(), (request, response) => {
-  //Cannot locate room
+app.post('/setcurrentvideo', bodyParser.json(), (request, response) => {
   const roomcode = request.body['roomcode'];
-  if (!(roomcode in rooms)) {
-    response.status(400).json({ error: 'Error - no room exist' });
+
+  // Cannot locate room
+  if (!bubbles.hasRoom(roomcode)) {
+    const error_msg = 'Error - no such room exists';
+    response.status(400).json({ error: error_msg });
+    console.log(error_msg);
     return;
   }
 
-  // posting video url to global variable
+  // needs error checking for url
   const url = request.body['url'];
-  rooms[roomcode]['videoState']['url'] = url;
+  bubbles.setVideoUrlForRoom(roomcode, url);
 
-  response.status(200).json({
-    message: 'ok'
-  });
-
-  console.log(rooms);
+  response.status(200).json({ message: 'ok' });
+  console.log(bubbles.rooms);
 });
 
-server.listen(port, () => console.log(`Listening on ${port}`));
+const systemLog = (message) => {
+  console.log(`System: ${message}`);
+};
